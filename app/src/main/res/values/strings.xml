@@ -1,0 +1,25 @@
+<resources>
+    <string name="app_name">NewSoftphoneA</string>
+    <string name="status_idle">Idle</string>
+    <string name="call_id_placeholder">Call ID: --</string>
+    <string name="account_section_title">Account</string>
+    <string name="call_section_title">Call Controls</string>
+    <string name="username_hint">Username</string>
+    <string name="password_hint">Password</string>
+    <string name="domain_hint">Domain (e.g. pbx.example.com)</string>
+    <string name="proxy_hint">Outbound Proxy (optional)</string>
+    <string name="register_button">Register</string>
+    <string name="target_uri_hint">Target URI (sip:1001@pbx.example.com)</string>
+    <string name="call_button">Call</string>
+    <string name="answer_button">Answer</string>
+    <string name="hangup_button">Hangup</string>
+    <string name="hold_toggle">Hold</string>
+    <string name="mute_toggle">Mute</string>
+    <string name="record_button">Record</string>
+    <string name="transfer_target_hint">Transfer Target URI</string>
+    <string name="blind_transfer_button">Blind Transfer</string>
+    <string name="warm_transfer_button">Warm Transfer</string>
+    <string name="attended_call_id_hint">Attended Call ID</string>
+    <string name="transcription_toggle">Enable Live Transcription</string>
+    <string name="cname_url_template">https://example.com/caller/%1$s</string>
+</resources>
