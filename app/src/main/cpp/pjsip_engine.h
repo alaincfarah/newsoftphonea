@@ -60,6 +60,11 @@ public:
     void SetCallMediaCallback(void (*callback)(int, bool));
     void SetRegistrationCallback(void (*callback)(bool, int));
 
+    void HandleIncomingCall(int callId, const std::string &fromUri, const std::string &displayName);
+    void HandleCallState(int callId, int state, int statusCode);
+    void HandleCallMediaState(int callId, bool isActive);
+    void HandleRegistration(bool registered, int statusCode);
+
 private:
     void (*incomingCallCallback_)(int, const std::string &, const std::string &);
     void (*callStateCallback_)(int, int, int);
@@ -70,4 +75,6 @@ private:
     pjsua_acc_id accountId_;
     int recorderId_;
 #endif
+
+    std::string logPath_;
 };

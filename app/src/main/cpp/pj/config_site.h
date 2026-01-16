@@ -1,0 +1,9 @@
+#pragma once
+
+#define PJ_IS_LITTLE_ENDIAN 1
+#define PJ_IS_BIG_ENDIAN 0
+#define PJ_HAS_LIMITS_H 1
+
+#define PJMEDIA_HAS_ANDROID 1
+#define PJMEDIA_AUDIO_DEV_HAS_ANDROID 1
+

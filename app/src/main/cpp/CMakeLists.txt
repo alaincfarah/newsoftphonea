@@ -16,6 +16,7 @@ add_library(
     pjsip_jni.cpp
 )
 
+target_include_directories(pjsip_jni PRIVATE "${CMAKE_SOURCE_DIR}")
 target_include_directories(pjsip_jni PRIVATE "${PJPROJECT_DIR}/pjsip/include")
 target_include_directories(pjsip_jni PRIVATE "${PJPROJECT_DIR}/pjlib/include")
 target_include_directories(pjsip_jni PRIVATE "${PJPROJECT_DIR}/pjmedia/include")

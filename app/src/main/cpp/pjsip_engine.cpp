@@ -31,18 +31,14 @@ namespace {
         pjsua_call_get_info(callId, &info);
         std::string remoteInfo = PjToString(info.remote_info);
         std::string displayName = PjToString(info.remote_contact);
-        if (g_engine->incomingCallCallback_) {
-            g_engine->incomingCallCallback_(callId, remoteInfo, displayName);
-        }
+        g_engine->HandleIncomingCall(callId, remoteInfo, displayName);
     }
 
     void OnCallState(pjsua_call_id callId, pjsip_event *) {
         if (!g_engine) return;
         pjsua_call_info info;
         pjsua_call_get_info(callId, &info);
-        if (g_engine->callStateCallback_) {
-            g_engine->callStateCallback_(callId, static_cast<int>(info.state), info.last_status);
-        }
+        g_engine->HandleCallState(callId, static_cast<int>(info.state), info.last_status);
     }
 
     void OnCallMediaState(pjsua_call_id callId) {
@@ -50,9 +46,7 @@ namespace {
         pjsua_call_info info;
         pjsua_call_get_info(callId, &info);
         bool active = info.media_status == PJSUA_CALL_MEDIA_ACTIVE;
-        if (g_engine->callMediaCallback_) {
-            g_engine->callMediaCallback_(callId, active);
-        }
+        g_engine->HandleCallMediaState(callId, active);
     }
 
     void OnRegState(pjsua_acc_id accId) {
@@ -60,9 +54,7 @@ namespace {
         pjsua_acc_info info;
         pjsua_acc_get_info(accId, &info);
         bool registered = info.status / 100 == 2;
-        if (g_engine->registrationCallback_) {
-            g_engine->registrationCallback_(registered, info.status);
-        }
+        g_engine->HandleRegistration(registered, info.status);
     }
 #endif
 }
@@ -92,6 +84,9 @@ bool PjsipEngine::Init(const std::string &logPath, int sipPort, int audioPort, i
     pj_status_t status = pjsua_create();
     if (status != PJ_SUCCESS) return false;
 
+    logPath_ = logPath;
+    (void)audioPort;
+
     pjsua_config cfg;
     pjsua_config_default(&cfg);
     cfg.cb.on_incoming_call = &OnIncomingCall;
@@ -101,7 +96,7 @@ bool PjsipEngine::Init(const std::string &logPath, int sipPort, int audioPort, i
 
     pjsua_logging_config logCfg;
     pjsua_logging_config_default(&logCfg);
-    logCfg.log_filename = pj_str(logPath.c_str());
+    pj_cstr(&logCfg.log_filename, logPath_.c_str());
 
     pjsua_media_config mediaCfg;
     pjsua_media_config_default(&mediaCfg);
@@ -109,8 +104,6 @@ bool PjsipEngine::Init(const std::string &logPath, int sipPort, int audioPort, i
     mediaCfg.clock_rate = 16000;
     mediaCfg.audio_frame_ptime = 20;
     mediaCfg.snd_auto_close_time = 0;
-    mediaCfg.rtp_port = audioPort;
-    mediaCfg.rtp_port_range = 200;
 
     status = pjsua_init(&cfg, &logCfg, &mediaCfg);
     if (status != PJ_SUCCESS) return false;
@@ -142,17 +135,17 @@ int PjsipEngine::CreateAccount(const std::string &username,
     pjsua_acc_config_default(&accCfg);
     std::string id = "sip:" + username + "@" + domain;
     std::string regUri = "sip:" + domain;
-    accCfg.id = pj_str(id.c_str());
-    accCfg.reg_uri = pj_str(regUri.c_str());
+    pj_cstr(&accCfg.id, id.c_str());
+    pj_cstr(&accCfg.reg_uri, regUri.c_str());
     accCfg.cred_count = 1;
-    accCfg.cred_info[0].realm = pj_str("*");
-    accCfg.cred_info[0].scheme = pj_str("digest");
-    accCfg.cred_info[0].username = pj_str(username.c_str());
+    pj_cstr(&accCfg.cred_info[0].realm, "*");
+    pj_cstr(&accCfg.cred_info[0].scheme, "digest");
+    pj_cstr(&accCfg.cred_info[0].username, username.c_str());
     accCfg.cred_info[0].data_type = PJSIP_CRED_DATA_PLAIN_PASSWD;
-    accCfg.cred_info[0].data = pj_str(password.c_str());
+    pj_cstr(&accCfg.cred_info[0].data, password.c_str());
     if (!proxy.empty()) {
         accCfg.proxy_cnt = 1;
-        accCfg.proxy[0] = pj_str(proxy.c_str());
+        pj_cstr(&accCfg.proxy[0], proxy.c_str());
     }
 
     pjsua_acc_id accId = PJSUA_INVALID_ID;
@@ -348,4 +341,28 @@ void PjsipEngine::SetCallMediaCallback(void (*callback)(int, bool)) {
 
 void PjsipEngine::SetRegistrationCallback(void (*callback)(bool, int)) {
     registrationCallback_ = callback;
+}
+
+void PjsipEngine::HandleIncomingCall(int callId, const std::string &fromUri, const std::string &displayName) {
+    if (incomingCallCallback_) {
+        incomingCallCallback_(callId, fromUri, displayName);
+    }
+}
+
+void PjsipEngine::HandleCallState(int callId, int state, int statusCode) {
+    if (callStateCallback_) {
+        callStateCallback_(callId, state, statusCode);
+    }
+}
+
+void PjsipEngine::HandleCallMediaState(int callId, bool isActive) {
+    if (callMediaCallback_) {
+        callMediaCallback_(callId, isActive);
+    }
+}
+
+void PjsipEngine::HandleRegistration(bool registered, int statusCode) {
+    if (registrationCallback_) {
+        registrationCallback_(registered, statusCode);
+    }
 }
