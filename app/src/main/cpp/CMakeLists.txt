@@ -27,7 +27,7 @@ if (PJSIP_USE_PJPROJECT_CMAKE
     AND CMAKE_VERSION VERSION_GREATER_EQUAL "3.28")
     add_subdirectory("${PJPROJECT_DIR}" pjproject_build)
     list(APPEND PJSIP_LINK_LIBS
-        pj
+        pjlib
         pjlib-util
         pjnath
         pjmedia
