@@ -39,7 +39,10 @@ jobs:
             local abi="$1"
             export TARGET_ABI="${abi}"
             cd app/src/main/cpp/pjproject
-            make distclean || true
+            chmod +x configure-android configure aconfigure || true
+            if [ -f build.mak ]; then
+              make distclean
+            fi
             ./configure-android --use-ndk-cflags
             make dep
             make -j"$(nproc)"
