@@ -1,0 +1,8 @@
+/build/
+/recordings/
+*.user
+*.suo
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+*.sln
