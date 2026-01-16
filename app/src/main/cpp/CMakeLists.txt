@@ -68,8 +68,12 @@ else()
 
     foreach(lib IN LISTS PJSIP_BASE_LIBS)
         add_library(${lib} STATIC IMPORTED)
+        set(lib_file "${lib}")
+        if (lib STREQUAL "pjsua-lib")
+            set(lib_file "pjsua")
+        endif()
         set_target_properties(${lib} PROPERTIES
-            IMPORTED_LOCATION "${PJSIP_LIB_DIR}/lib${lib}.a"
+            IMPORTED_LOCATION "${PJSIP_LIB_DIR}/lib${lib_file}.a"
         )
         list(APPEND PJSIP_LINK_LIBS ${lib})
     endforeach()
