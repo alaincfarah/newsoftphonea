@@ -68,6 +68,8 @@ PjsipEngine::PjsipEngine()
       , accountId_(PJSUA_INVALID_ID),
       recorderId_(PJSUA_INVALID_ID)
 #endif
+      , mediaPort_(0),
+      mediaPortRange_(0)
 {
     g_engine = this;
 }
@@ -85,7 +87,8 @@ bool PjsipEngine::Init(const std::string &logPath, int sipPort, int audioPort, i
     if (status != PJ_SUCCESS) return false;
 
     logPath_ = logPath;
-    (void)audioPort;
+    mediaPort_ = static_cast<unsigned>(audioPort);
+    mediaPortRange_ = 200;
 
     pjsua_config cfg;
     pjsua_config_default(&cfg);
@@ -96,7 +99,7 @@ bool PjsipEngine::Init(const std::string &logPath, int sipPort, int audioPort, i
 
     pjsua_logging_config logCfg;
     pjsua_logging_config_default(&logCfg);
-    pj_cstr(&logCfg.log_filename, logPath_.c_str());
+    logCfg.log_filename = pj_str(const_cast<char *>(logPath_.c_str()));
 
     pjsua_media_config mediaCfg;
     pjsua_media_config_default(&mediaCfg);
@@ -135,18 +138,20 @@ int PjsipEngine::CreateAccount(const std::string &username,
     pjsua_acc_config_default(&accCfg);
     std::string id = "sip:" + username + "@" + domain;
     std::string regUri = "sip:" + domain;
-    pj_cstr(&accCfg.id, id.c_str());
-    pj_cstr(&accCfg.reg_uri, regUri.c_str());
+    accCfg.id = pj_str(const_cast<char *>(id.c_str()));
+    accCfg.reg_uri = pj_str(const_cast<char *>(regUri.c_str()));
     accCfg.cred_count = 1;
-    pj_cstr(&accCfg.cred_info[0].realm, "*");
-    pj_cstr(&accCfg.cred_info[0].scheme, "digest");
-    pj_cstr(&accCfg.cred_info[0].username, username.c_str());
+    accCfg.cred_info[0].realm = pj_str(const_cast<char *>("*"));
+    accCfg.cred_info[0].scheme = pj_str(const_cast<char *>("digest"));
+    accCfg.cred_info[0].username = pj_str(const_cast<char *>(username.c_str()));
     accCfg.cred_info[0].data_type = PJSIP_CRED_DATA_PLAIN_PASSWD;
-    pj_cstr(&accCfg.cred_info[0].data, password.c_str());
+    accCfg.cred_info[0].data = pj_str(const_cast<char *>(password.c_str()));
     if (!proxy.empty()) {
         accCfg.proxy_cnt = 1;
-        pj_cstr(&accCfg.proxy[0], proxy.c_str());
+        accCfg.proxy[0] = pj_str(const_cast<char *>(proxy.c_str()));
     }
+    accCfg.rtp_cfg.port = mediaPort_;
+    accCfg.rtp_cfg.port_range = mediaPortRange_;
 
     pjsua_acc_id accId = PJSUA_INVALID_ID;
     pj_status_t status = pjsua_acc_add(&accCfg, PJ_TRUE, &accId);
@@ -175,8 +180,7 @@ bool PjsipEngine::RegisterAccount(int accountId, bool enable) {
 int PjsipEngine::MakeCall(int accountId, const std::string &targetUri) {
 #if PJSIP_AVAILABLE
     pjsua_call_id callId = PJSUA_INVALID_ID;
-    pj_str_t target;
-    pj_cstr(&target, targetUri.c_str());
+    pj_str_t target = pj_str(const_cast<char *>(targetUri.c_str()));
     pj_status_t status = pjsua_call_make_call(
         accountId,
         &target,
@@ -241,8 +245,7 @@ bool PjsipEngine::MuteCall(int callId, bool mute) {
 
 bool PjsipEngine::BlindTransfer(int callId, const std::string &targetUri) {
 #if PJSIP_AVAILABLE
-    pj_str_t target;
-    pj_cstr(&target, targetUri.c_str());
+    pj_str_t target = pj_str(const_cast<char *>(targetUri.c_str()));
     return pjsua_call_xfer(callId, &target, nullptr) == PJ_SUCCESS;
 #else
     (void)callId;
@@ -268,8 +271,7 @@ bool PjsipEngine::StartRecording(int callId, const std::string &filePath) {
         recorderId_ = PJSUA_INVALID_ID;
     }
 
-    pj_str_t path;
-    pj_cstr(&path, filePath.c_str());
+    pj_str_t path = pj_str(const_cast<char *>(filePath.c_str()));
     pj_status_t status = pjsua_recorder_create(
         &path,
         0,
@@ -312,8 +314,7 @@ bool PjsipEngine::StopRecording(int callId) {
 bool PjsipEngine::SetCodecPriorities(const std::vector<CodecPriority> &codecs) {
 #if PJSIP_AVAILABLE
     for (const auto &codec : codecs) {
-        pj_str_t name;
-        pj_cstr(&name, codec.name.c_str());
+        pj_str_t name = pj_str(const_cast<char *>(codec.name.c_str()));
         pjsua_codec_set_priority(&name, codec.priority);
     }
     return true;

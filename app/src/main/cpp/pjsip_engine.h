@@ -65,16 +65,18 @@ public:
     void HandleCallMediaState(int callId, bool isActive);
     void HandleRegistration(bool registered, int statusCode);
 
-private:
     void (*incomingCallCallback_)(int, const std::string &, const std::string &);
     void (*callStateCallback_)(int, int, int);
     void (*callMediaCallback_)(int, bool);
     void (*registrationCallback_)(bool, int);
 
+private:
 #if PJSIP_AVAILABLE
     pjsua_acc_id accountId_;
     int recorderId_;
 #endif
 
     std::string logPath_;
+    unsigned mediaPort_;
+    unsigned mediaPortRange_;
 };
