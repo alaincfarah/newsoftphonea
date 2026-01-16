@@ -28,10 +28,40 @@ jobs:
       - name: Accept Android SDK licenses
         run: yes | sdkmanager --licenses
 
-      - name: Fetch pjproject
+      - name: Build pjproject static libs
+        env:
+          ANDROID_NDK_ROOT: ${{ env.ANDROID_SDK_ROOT }}/ndk/26.1.10909125
+          APP_PLATFORM: android-26
         run: |
-          rm -rf app/src/main/cpp/pjproject
-          git clone --depth 1 https://github.com/pjsip/pjproject.git app/src/main/cpp/pjproject
+          set -euo pipefail
+
+          build_pjproject() {
+            local abi="$1"
+            export TARGET_ABI="${abi}"
+            cd app/src/main/cpp/pjproject
+            make distclean || true
+            ./configure-android --use-ndk-cflags
+            make dep
+            make -j"$(nproc)"
+
+            local target_name
+            target_name=$(grep '^export TARGET_NAME' build.mak | awk '{print $4}')
+            local lib_dir="android/${abi}/lib"
+            mkdir -p "${lib_dir}"
+
+            find pjlib/lib pjlib-util/lib pjnath/lib pjmedia/lib pjsip/lib third_party/lib \
+              -name "lib*-${target_name}.a" -print0 | \
+              while IFS= read -r -d '' lib; do
+                base=$(basename "${lib}")
+                new="${base/-${target_name}.a/.a}"
+                cp "${lib}" "${lib_dir}/${new}"
+              done
+
+            cd - >/dev/null
+          }
+
+          build_pjproject armeabi-v7a
+          build_pjproject arm64-v8a
 
       - name: Build debug APK
         uses: gradle/gradle-build-action@v3
