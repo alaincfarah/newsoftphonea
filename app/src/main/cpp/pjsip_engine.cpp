@@ -175,9 +175,11 @@ bool PjsipEngine::RegisterAccount(int accountId, bool enable) {
 int PjsipEngine::MakeCall(int accountId, const std::string &targetUri) {
 #if PJSIP_AVAILABLE
     pjsua_call_id callId = PJSUA_INVALID_ID;
+    pj_str_t target;
+    pj_cstr(&target, targetUri.c_str());
     pj_status_t status = pjsua_call_make_call(
         accountId,
-        pj_str(targetUri.c_str()),
+        &target,
         0,
         nullptr,
         nullptr,
@@ -239,7 +241,9 @@ bool PjsipEngine::MuteCall(int callId, bool mute) {
 
 bool PjsipEngine::BlindTransfer(int callId, const std::string &targetUri) {
 #if PJSIP_AVAILABLE
-    return pjsua_call_xfer(callId, pj_str(targetUri.c_str()), nullptr) == PJ_SUCCESS;
+    pj_str_t target;
+    pj_cstr(&target, targetUri.c_str());
+    return pjsua_call_xfer(callId, &target, nullptr) == PJ_SUCCESS;
 #else
     (void)callId;
     (void)targetUri;
@@ -264,8 +268,10 @@ bool PjsipEngine::StartRecording(int callId, const std::string &filePath) {
         recorderId_ = PJSUA_INVALID_ID;
     }
 
+    pj_str_t path;
+    pj_cstr(&path, filePath.c_str());
     pj_status_t status = pjsua_recorder_create(
-        pj_str(filePath.c_str()),
+        &path,
         0,
         nullptr,
         0,
@@ -306,7 +312,9 @@ bool PjsipEngine::StopRecording(int callId) {
 bool PjsipEngine::SetCodecPriorities(const std::vector<CodecPriority> &codecs) {
 #if PJSIP_AVAILABLE
     for (const auto &codec : codecs) {
-        pjsua_codec_set_priority(pj_str(codec.name.c_str()), codec.priority);
+        pj_str_t name;
+        pj_cstr(&name, codec.name.c_str());
+        pjsua_codec_set_priority(&name, codec.priority);
     }
     return true;
 #else
